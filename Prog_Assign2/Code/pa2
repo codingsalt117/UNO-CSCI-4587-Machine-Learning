@@ -1,0 +1,73 @@
+Train_image_vec = uint8(zeros(10304, 340));  % Dimension of an image is 112 x 92 = 10304 pixels; I want to load 40 x 8 [index: 1 to 8] = 320 images for training
+Test_image_vec = uint8(zeros(10304, 60));    % I want to load 60 x 1 [index: 9] = 60 images for testing
+
+for i = 1:40
+        path = strcat('s', num2str(i), '\');
+        for j = 1:8
+            img = imread(strcat(path, num2str(j), '.pgm'));
+            Train_image_vec(:, j + (i - 1) * 8) = reshape(img, 10304, 1);
+        end
+        img = imread(strcat(path, '9.pgm'));  % Load only the first image for testing
+        Test_image_vec(:, i) = reshape(img, 10304, 1);
+end
+
+for i = 1:40
+    path = strcat('s', num2str(i), '\');
+    num_images = len(os.listdir(path));
+    print('Number of images in folder {}: {}'.format(i, num_images));
+
+    if i <= 20:
+        test_images = 2;
+    else:
+        test_images = 1;
+    
+    for j in range(num_images):
+        img = imread(strcat(path, num2str(j), '.pgm'));
+
+        # If the image is one of the test images, add it to the testing image vector
+        if j < test_images:
+            Test_image_vec[:, j] = reshape(img, 10304, 1);
+        else:
+            # Otherwise, add it to the training image vector
+            Train_image_vec[:, j - test_images] = reshape(img, 10304, 1);
+end
+print('Length of Train_image_vec: {}'.format(len(Train_image_vec)))
+print('Length of Test_image_vec: {}'.format(len(Test_image_vec)))
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% [Optional Step:] See how the average-image looks like ==========================================================
+  imshow(reshape(avg,112,92));  title('This is the average of the training faces');   
+  wait4bp = waitforbuttonpress;
+
+% Remove the computed average value from the each of the training images and  create "Normal vector"==============
+ Normal_Train_Vec =[];
+ for i=1:340
+     Normal_Train_Vec (:, i) = Train_image_vec(:, i) - avg;
+ end
+
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ %Generate covariance matrix M ====================================================================================
+M = Normal_Train_Vec' * Normal_Train_Vec;
+[U, E, V] =svd(M);     % U = EigenVector, E = EigenValue
+
+errors = zeros(1,340);
+
+%Let us pick 1st best 15 EigenVectors' corresponsing normal training vectors (from 10304x320 to 10304x15) ========
+for num_eigenvectors = 1:340    
+    U=Normal_Train_Vec * U; 
+    U_subset=U(:,1:num_eigenvectors);           
+
+% Extract the features from training ... each row in Training_Feature is the pattern of one training images.======
+   Training_Feature =[];
+   for i = 1:340
+       Training_Feature(i,:)=  uint8(single(Normal_Train_Vec(:,i))'*single(U_subset));
+       errors(num_eigenvectors) = reconstruction_error;   
+   end
+
+% Plot the errors
+figure;
+plot(1:340, errors, '-o');
+xlabel('Number of Eigenvectors');
+ylabel('Reconstruction Error');
+title('Reconstruction Error vs Number of Eigenvectors');
+grid on; 
